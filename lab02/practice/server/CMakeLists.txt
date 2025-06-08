@@ -1,6 +1,7 @@
 set(SOURCES
     src/service/service_product.cpp
     src/main.cpp
+    src/util/images.cpp
 )
 
 find_package(oatpp REQUIRED)
