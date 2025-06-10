@@ -1,3 +1,7 @@
+#include <httpparser/request.h>
+#include <httpparser/response.h>
+#include <httpparser/httprequestparser.h>
+
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -21,6 +25,36 @@ namespace
         sockaddr_in addr_inet;
     };
 
+    std::string handle_msg(std::string http_request)
+    {
+        using namespace httpparser;
+
+        Request request;
+        HttpRequestParser parser;
+
+        HttpRequestParser::ParseResult res = parser.parse(request, http_request.data(), http_request.data() + http_request.size());
+
+        if (res != HttpRequestParser::ParsingCompleted)
+        {
+            throw std::runtime_error("Failed to parse HTTP");
+        }
+
+        Response response;
+        response.versionMajor = 1;
+        response.versionMinor = 1;
+        response.statusCode = 200;
+        response.status = "OK";
+
+        // Library has a bug =)
+        auto content = "\r\nGot method " + request.method + " on path: " + request.uri;
+        response.content = {content.begin(), content.end()};
+        response.headers.emplace_back(Response::HeaderItem{"Content-Length", std::to_string(content.size() - 2)});
+        response.headers.emplace_back(Response::HeaderItem{"Content-Type", "text/plain"});
+
+        std::cout << content << std::endl;
+
+        return response.inspect();
+    }
 }
 
 int main()
@@ -58,8 +92,6 @@ int main()
 
     std::cout << "Listening on " << PORT << std::endl;
 
-    // The  argument sockfd is a socket that has been created with socket(2), bound to a local address with bind(2), and is listening for connections after a listen(2).
-    // accept(sockfd, )
     for (;;)
     {
         int peer_sockfd = -1;
@@ -78,14 +110,19 @@ int main()
         }
         std::cout << "Got connection from " << peer_addr_string << " on port " << ntohs(peer_addr.addr_inet.sin_port) << std::endl;
 
-        std::string buffer(MAX_MSG_SIZE, '\0');
+        std::string msg(MAX_MSG_SIZE, '\0');
 
-        if (recv(peer_sockfd, buffer.data(), MAX_MSG_SIZE, 0) == -1)
+        int64_t msg_size;
+        if ((msg_size = recv(peer_sockfd, msg.data(), MAX_MSG_SIZE, 0)) == -1)
         {
             throw std::runtime_error("#7 " + std::string(strerror(errno)));
         }
 
-        std::cout << "Got message " << buffer << std::endl;
+        msg.resize(msg_size);
+
+        auto answer = handle_msg(std::move(msg));
+
+        send(peer_sockfd, answer.data(), answer.size(), 0);
 
         if (close(peer_sockfd) == -1)
         {
