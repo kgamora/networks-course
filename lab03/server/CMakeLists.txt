@@ -20,6 +20,7 @@ find_package(httpparser)
 
 set(SOURCES
     src/main.cpp
+    src/library/socket.cpp
 )
 
 add_executable(server ${SOURCES})
