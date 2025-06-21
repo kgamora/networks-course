@@ -1,16 +1,11 @@
 #include "socket.hpp"
-
 #include "common.hpp"
 
 #include <sys/socket.h>
-
 #include <unistd.h>
 
 #include <stdexcept>
 #include <cstring>
-
-// TODO: remove
-#include <iostream>
 
 namespace
 {

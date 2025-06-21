@@ -21,6 +21,7 @@ find_package(httpparser)
 set(SOURCES
     src/main.cpp
     src/library/socket.cpp
+    src/library/session.cpp
 )
 
 add_executable(server ${SOURCES})
