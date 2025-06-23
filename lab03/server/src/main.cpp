@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 
 #include <iostream>
+#include <thread>
 
 namespace
 {
@@ -30,9 +31,13 @@ int main()
 
         std::cout << "Got connection from " << peer_addr.Address << " on port " << peer_addr.Port << std::endl;
 
-        lab03::CreateSession(
-            std::move(peer_sock),
-            std::move(peer_addr))
-            ->Serve();
+        std::thread sessionThread(
+            [session = lab03::CreateSession(
+                 std::move(peer_sock),
+                 std::move(peer_addr))]
+            {
+                session->Serve();
+            });
+        sessionThread.detach();
     }
 }
